@@ -21,7 +21,6 @@ import at.markushi.ui.CircleButton;
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
     private static final int CAMERA_REQUEST = 1111;
-    private TextView mTvSos;
     private CircleButton mButtonOnOf;
     private boolean mHasCameraFlash;
     private boolean mFlashStatus;
@@ -33,12 +32,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         findViewByIds();
-        ActivityCompat.requestPermissions(MainActivity.this,
-                new String[]{Manifest.permission.CAMERA}, CAMERA_REQUEST);
-        mHasCameraFlash = getPackageManager().
-                hasSystemFeature(PackageManager.FEATURE_CAMERA_FLASH);
         boolean isEnabled = ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
                 == PackageManager.PERMISSION_GRANTED;
+        if (!isEnabled) {
+            ActivityCompat.requestPermissions(MainActivity.this,
+                    new String[]{Manifest.permission.CAMERA}, CAMERA_REQUEST);
+        }
+        mHasCameraFlash = getPackageManager().
+                hasSystemFeature(PackageManager.FEATURE_CAMERA_FLASH);
         mMyThread = new MyThread();
 
     }
@@ -46,21 +47,26 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private void findViewByIds() {
         mButtonOnOf = findViewById(R.id.btn_on);
         mButtonOnOf.setOnClickListener(this);
-        mTvSos = findViewById(R.id.tv_sos);
+        TextView mTvSos = findViewById(R.id.tv_sos);
         mTvSos.setOnClickListener(this);
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     @Override
     public void onClick(View v) {
         switch ((v.getId())) {
             case R.id.btn_on:
                 if (mHasCameraFlash) {
+                    if (mSos) {
+                        mSos = false;
+                        mMyThread.interrupt();
+                        mFlashStatus = false;
+                    }
+
                     if (mFlashStatus) {
-                        flashLightOff();
+                        setupFlash(false);
                         mButtonOnOf.setImageResource(R.drawable.ic_power_button_off);
-                    } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                        flashLightOn();
+                    } else {
+                        setupFlash(true);
                         mButtonOnOf.setImageResource(R.drawable.ic_power_button_on);
                     }
                 } else {
@@ -71,7 +77,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             case R.id.tv_sos:
                 setSosFlash();
-                mSos = !mSos;
+                mButtonOnOf.setImageResource(R.drawable.ic_power_button_off);
                 break;
 
             default:
@@ -83,38 +89,25 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         try {
             if (mSos) {
                 mMyThread.interrupt();
-                flashLightOff();
+                setupFlash(false);
+
             } else {
+                mMyThread = new MyThread();
                 mMyThread.start();
             }
-        } catch (Exception e) {
+            mSos = !mSos;
+        } catch (Exception ignored) {
         }
     }
 
-    private void flashLightOn() {
-        if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            CameraManager cameraManager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
-            try {
-                String cameraId = cameraManager.getCameraIdList()[0];
-                cameraManager.setTorchMode(cameraId, true);
-                mFlashStatus = true;
-
-            } catch (CameraAccessException e) {
-                Log.d("ERROR", e.toString());
-            }
-        }
-
-
-    }
-
-    private void flashLightOff() {
+    private void setupFlash(boolean isFlashEnable) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             CameraManager cameraManager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
             try {
                 String cameraId = cameraManager.getCameraIdList()[0];
-                cameraManager.setTorchMode(cameraId, false);
-                mFlashStatus = false;
-            } catch (CameraAccessException e) {
+                cameraManager.setTorchMode(cameraId, isFlashEnable);
+                mFlashStatus = isFlashEnable;
+            } catch (CameraAccessException ignored) {
             }
         }
     }
@@ -123,20 +116,19 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         public void run() {
             long blinkDelay = 1000; //Delay in ms
             boolean isFlashOn = false;
-            for (int i = 0; ; i++) {
-                if (!mSos) {
-                    if (!isFlashOn) {
-                        flashLightOn();
-                        isFlashOn = true;
-                    } else {
-                        flashLightOff();
-                        isFlashOn = false;
-                    }
-                    try {
-                        Thread.sleep(blinkDelay);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
+            for (; ; ) {
+                if (!isFlashOn) {
+                    setupFlash(true);
+                    isFlashOn = true;
+                } else {
+                    setupFlash(false);
+                    isFlashOn = false;
+                }
+                try {
+                    Thread.sleep(blinkDelay);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                    break;
                 }
             }
         }
