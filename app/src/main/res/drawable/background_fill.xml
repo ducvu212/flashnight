@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@android:id/background"
+        android:drawable="@drawable/rec4"
+        android:height="2dp"
+        android:top="8dp"/>
+    <item
+        android:id="@android:id/background"
+        android:drawable="@drawable/grid"
+        android:top="12dp"/>
+
+</layer-list>

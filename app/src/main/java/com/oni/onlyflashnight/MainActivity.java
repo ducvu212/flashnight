@@ -7,15 +7,11 @@ import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.support.annotation.RequiresApi;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 import android.view.View;
-import android.widget.TextView;
-import android.widget.Toast;
-
+import android.widget.SeekBar;
 import at.markushi.ui.CircleButton;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
@@ -26,6 +22,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private boolean mFlashStatus;
     private boolean mSos;
     private MyThread mMyThread;
+    private SeekBar mSeekBar;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,53 +33,54 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 == PackageManager.PERMISSION_GRANTED;
         if (!isEnabled) {
             ActivityCompat.requestPermissions(MainActivity.this,
-                    new String[]{Manifest.permission.CAMERA}, CAMERA_REQUEST);
+                    new String[] { Manifest.permission.CAMERA }, CAMERA_REQUEST);
         }
         mHasCameraFlash = getPackageManager().
                 hasSystemFeature(PackageManager.FEATURE_CAMERA_FLASH);
         mMyThread = new MyThread();
-
     }
 
     private void findViewByIds() {
-        mButtonOnOf = findViewById(R.id.btn_on);
-        mButtonOnOf.setOnClickListener(this);
-        TextView mTvSos = findViewById(R.id.tv_sos);
-        mTvSos.setOnClickListener(this);
+        //        mButtonOnOf = findViewById(R.id.btn_on);
+        //        TextView mTvSos = findViewById(R.id.tv_sos);
+        //        if (mHasCameraFlash) {
+        //            mButtonOnOf.setOnClickListener(this);
+        //            mTvSos.setOnClickListener(this);
+        //        } else {
+        //            Toast.makeText(MainActivity.this, "No flash available on your device",
+        //                    Toast.LENGTH_SHORT).show();
+        //        }
+        mSeekBar = findViewById(R.id.seekBar);
     }
 
     @Override
     public void onClick(View v) {
-        switch ((v.getId())) {
-            case R.id.btn_on:
-                if (mHasCameraFlash) {
-                    if (mSos) {
-                        mSos = false;
-                        mMyThread.interrupt();
-                        mFlashStatus = false;
-                    }
-
-                    if (mFlashStatus) {
-                        setupFlash(false);
-                        mButtonOnOf.setImageResource(R.drawable.ic_power_button_off);
-                    } else {
-                        setupFlash(true);
-                        mButtonOnOf.setImageResource(R.drawable.ic_power_button_on);
-                    }
-                } else {
-                    Toast.makeText(MainActivity.this, "No flash available on your device",
-                            Toast.LENGTH_SHORT).show();
-                }
-                break;
-
-            case R.id.tv_sos:
-                setSosFlash();
-                mButtonOnOf.setImageResource(R.drawable.ic_power_button_off);
-                break;
-
-            default:
-                break;
-        }
+//        switch ((v.getId())) {
+//            case R.id.btn_on:
+//                if (mSos) {
+//                    mSos = false;
+//                    mMyThread.interrupt();
+//                    mFlashStatus = false;
+//                }
+//
+//                if (mFlashStatus) {
+//                    setupFlash(false);
+//                    mButtonOnOf.setImageResource(R.drawable.ic_power_button_off);
+//                } else {
+//                    setupFlash(true);
+//                    mButtonOnOf.setImageResource(R.drawable.ic_power_button_on);
+//                }
+//
+//                break;
+//
+//            case R.id.tv_sos:
+//                setSosFlash();
+//                mButtonOnOf.setImageResource(R.drawable.ic_power_button_off);
+//                break;
+//
+//            default:
+//                break;
+//        }
     }
 
     private void setSosFlash() {
@@ -90,7 +88,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             if (mSos) {
                 mMyThread.interrupt();
                 setupFlash(false);
-
             } else {
                 mMyThread = new MyThread();
                 mMyThread.start();
@@ -133,5 +130,4 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         }
     }
-
 }
